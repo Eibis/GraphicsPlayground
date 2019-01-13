@@ -23,7 +23,8 @@ Model::Model(const string& path, const string& texture_path, glm::vec3 origin, f
 
 	Load(path, texture_path);
 
-	ModelMatrix = glm::translate(glm::mat4(1.0f), origin);
+	glm::mat4 scaled_mat = glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale, scale));
+	ModelMatrix = glm::translate(scaled_mat, origin);
 }
 
 Model::~Model()
@@ -194,10 +195,6 @@ bool Model::LoadOBJ(
 			glm::vec3 vertex;
 			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
 			
-			vertex.x *= Scale;
-			vertex.y *= Scale;
-			vertex.z *= Scale;
-
 			temp_vertices.push_back(vertex);
 		}
 		else if (strcmp(lineHeader, "vt") == 0) 
