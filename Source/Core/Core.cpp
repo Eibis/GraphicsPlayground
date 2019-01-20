@@ -17,6 +17,7 @@ GLFWwindow* window;
 using namespace glm;
 
 #include "../Rendering/Model.h"
+#include "Utilities.h"
 
 Core* Core::Instance;
 
@@ -96,6 +97,8 @@ int Core::Init()
 int Core::MainLoop()
 {
 	do {
+		Utilities::GetInstance()->UpdateFrameCount();
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		ComputeMatricesFromInputs();

@@ -137,12 +137,14 @@
   <ItemGroup>
     <ClCompile Include="Source\Core\boot.cpp" />
     <ClCompile Include="Source\Core\Core.cpp" />
+    <ClCompile Include="Source\Core\Utilities.cpp" />
     <ClCompile Include="Source\Rendering\Model.cpp" />
     <ClCompile Include="Source\Rendering\vboindexer.cpp" />
     <ClCompile Include="Source\Shaders\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Core.h" />
+    <ClInclude Include="Source\Core\Utilities.h" />
     <ClInclude Include="Source\Rendering\Model.h" />
     <ClInclude Include="Source\Rendering\vboindexer.hpp" />
     <ClInclude Include="Source\Shaders\shader.hpp" />
