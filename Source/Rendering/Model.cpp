@@ -8,6 +8,7 @@
 
 #include "../Core/Core.h"
 #include "../Shaders/shader.hpp"
+#include "../Core/Camera.h"
 #include "vboindexer.hpp"
 
 // Include GLM
@@ -19,7 +20,10 @@ using namespace std;
 
 Model::Model(const string& path, const string& texture_path, glm::vec3 origin, float scale)
 {
+	Position = origin;
 	Scale = scale;
+
+	BoundingBox = new Box(Position);
 
 	Load(path, texture_path);
 
@@ -29,6 +33,8 @@ Model::Model(const string& path, const string& texture_path, glm::vec3 origin, f
 
 Model::~Model()
 {
+	delete BoundingBox;
+
 	glDeleteBuffers(1, &VertexBuffer);
 	glDeleteBuffers(1, &UVBuffer);
 	glDeleteBuffers(1, &NormalBuffer);
@@ -36,20 +42,20 @@ Model::~Model()
 	glDeleteTextures(1, &Texture);
 }
 
-GLuint Model::Draw(GLuint currentShaderID)
+GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
 {
 	bool init_shader = currentShaderID != ShaderID;
 	if(init_shader)
 		glUseProgram(ShaderID);
 	
-	glm::mat4 mvp = Core::Instance->ProjMatr * Core::Instance->ViewMatr * ModelMatrix;
+	glm::mat4 mvp = camera->ProjMatr * camera->ViewMatr * ModelMatrix;
 
 	glUniformMatrix4fv(MVPID, 1, GL_FALSE, &mvp[0][0]);
 	glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 
 	if (init_shader)
 	{
-		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &Core::Instance->ViewMatr[0][0]);
+		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &camera->ViewMatr[0][0]);
 
 		Core::Instance->DrawLights();
 
@@ -251,11 +257,15 @@ bool Model::LoadOBJ(
 		glm::vec2 uv = temp_uvs[uvIndex - 1];
 		glm::vec3 normal = temp_normals[normalIndex - 1];
 
+		BoundingBox->UpdateBox(vertex);
+
 		// Put the attributes in buffers
 		out_vertices.push_back(vertex);
 		out_uvs.push_back(uv);
 		out_normals.push_back(normal);
 	}
+
+	BoundingBox->ApplyWithScale(Scale);
 
 	fclose(file);
 	return true;

@@ -47,6 +47,9 @@
     <ClCompile Include="Source\Core\Utilities.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Core\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Core\Core.h">
@@ -63,6 +66,9 @@
     </ClInclude>
     <ClInclude Include="Source\Core\Utilities.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Core\Camera.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
