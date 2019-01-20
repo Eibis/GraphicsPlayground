@@ -35,11 +35,12 @@ void main(){
 	vec3 LightPosition_cameraspace = ( V * vec4(LightPosition_worldspace,1)).xyz;
 	LightDirection_cameraspace = LightPosition_cameraspace + EyeDirection_cameraspace;
 	
+	//in theory if we scale in an uneven way we should use the inverse of the transpose instead of M but it's not really working
 	//inverse transpose of the model matrix
-	mat4 nM = transpose(inverse(M));
+	//mat4 nM = transpose(inverse(M));
 
 	// Normal of the the vertex, in camera space
-	Normal_cameraspace = ( V * nM * vec4(vertexNormal_modelspace,0)).xyz; 
+	Normal_cameraspace = ( V * M * vec4(vertexNormal_modelspace,0)).xyz; 
 	
 	// UV of the vertex. No special space for this one.
 	UV = vertexUV;
