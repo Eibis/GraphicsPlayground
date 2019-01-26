@@ -1,11 +1,14 @@
 #pragma once
+
+class Text2D;
+
 class Utilities
 {
 public:
 	Utilities();
 	~Utilities();
 
-	void UpdateFrameCount();
+	void UpdateFrameCount(Text2D* text2D);
 
 	static Utilities* GetInstance();
 private:

@@ -15,6 +15,7 @@ using namespace glm;
 using namespace std;
 
 class Model;
+class Text2D;
 class Camera;
 struct GLFWwindow;
 
@@ -33,6 +34,8 @@ public:
 
 	vector<Camera*> Cameras;
 	vector<Model*> objects3d;
+	vector<Text2D*> texts;
+	
 	map<string, GLuint> shaders;
 
 	GLuint VertexArrayID;
