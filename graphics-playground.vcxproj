@@ -129,10 +129,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Source\Shaders\NormalMapping.fragmentshader" />
+    <None Include="Source\Shaders\NormalMapping.vertexshader" />
     <None Include="Source\Shaders\SimpleFragmentShader.fragmentshader" />
     <None Include="Source\Shaders\SimpleVertexShader.vertexshader" />
     <None Include="Source\Shaders\StandardShading.fragmentshader" />
     <None Include="Source\Shaders\StandardShading.vertexshader" />
+    <None Include="Source\Shaders\TextVertexShader.fragmentshader" />
+    <None Include="Source\Shaders\TextVertexShader.vertexshader" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\boot.cpp" />

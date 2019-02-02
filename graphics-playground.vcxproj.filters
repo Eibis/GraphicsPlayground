@@ -25,8 +25,24 @@
     <None Include="Source\Shaders\SimpleVertexShader.vertexshader">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Source\Shaders\StandardShading.fragmentshader" />
-    <None Include="Source\Shaders\StandardShading.vertexshader" />
+    <None Include="Source\Shaders\StandardShading.vertexshader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\StandardShading.fragmentshader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\NormalMapping.fragmentshader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\NormalMapping.vertexshader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\TextVertexShader.fragmentshader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Source\Shaders\TextVertexShader.vertexshader">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Core\boot.cpp">

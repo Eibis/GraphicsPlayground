@@ -20,12 +20,30 @@ using namespace std;
 
 Model::Model(const string& path, const string& texture_path, glm::vec3 origin, float scale)
 {
+	Init(path, texture_path, origin, scale);
+}
+
+Model::Model(const string& path, const string& texture_path, glm::vec3 origin, float scale, const string& normalmap_path, const string& specularmap_path)
+{
+	NormalMapPath = normalmap_path;
+	SpecularPath = specularmap_path;
+
+	HasNormalMap = true;
+	HasSpecularMap = true;
+	
+	Init(path, texture_path, origin, scale);
+}
+
+void Model::Init(const string& path, const string& texture_path, glm::vec3 origin, float scale)
+{
+	DiffusePath = texture_path;
+
 	Position = origin;
 	Scale = scale;
 
 	BoundingBox = new Box(Position);
 
-	Load(path, texture_path);
+	Load(path, DiffusePath, NormalMapPath, SpecularPath);
 
 	glm::mat4 scaled_mat = glm::scale(glm::mat4(1.0f), glm::vec3(scale, scale, scale));
 	ModelMatrix = glm::translate(scaled_mat, origin);
@@ -39,7 +57,12 @@ Model::~Model()
 	glDeleteBuffers(1, &UVBuffer);
 	glDeleteBuffers(1, &NormalBuffer);
 	glDeleteBuffers(1, &ElementBuffer);
-	glDeleteTextures(1, &Texture);
+	glDeleteBuffers(1, &TangentBuffer);
+	glDeleteBuffers(1, &BiTangentBuffer);
+
+	glDeleteTextures(1, &DiffuseTexture);
+	glDeleteTextures(1, &NormalTexture);
+	glDeleteTextures(1, &SpecularTexture);
 }
 
 GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
@@ -47,11 +70,18 @@ GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
 	bool init_shader = currentShaderID != ShaderID;
 	if(init_shader)
 		glUseProgram(ShaderID);
-	
-	glm::mat4 mvp = camera->ProjMatr * camera->ViewMatr * ModelMatrix;
+
+	glm::mat4 mv = camera->ViewMatr * ModelMatrix;
+	glm::mat4 mvp = camera->ProjMatr * mv;
 
 	glUniformMatrix4fv(MVPID, 1, GL_FALSE, &mvp[0][0]);
 	glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+
+	if(HasNormalMap)
+	{
+		glm::mat3 mv3x3 = glm::mat3(mv);
+		glUniformMatrix3fv(ModelMatrix3X3ID, 1, GL_FALSE, &mv3x3[0][0]);
+	}
 
 	if (init_shader)
 	{
@@ -61,14 +91,33 @@ GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
 
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, Texture);
-		// Set our "myTextureSampler" sampler to use Texture Unit 0
-		glUniform1i(TextureID, 0);
+		glBindTexture(GL_TEXTURE_2D, DiffuseTexture);
+		glUniform1i(DiffuseTextureID, 0);
+
+		if(HasNormalMap)
+		{
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, NormalTexture);
+			glUniform1i(NormalTextureID, 1);
+		}
+
+		if(HasSpecularMap)
+		{
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, SpecularTexture);
+			glUniform1i(SpecularTextureID, 2);
+		}
 	}
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+
+	if (HasNormalMap)
+	{
+		glEnableVertexAttribArray(3);
+		glEnableVertexAttribArray(4);
+	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -79,11 +128,23 @@ GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
 	glBindBuffer(GL_ARRAY_BUFFER, NormalBuffer);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+	if (HasNormalMap)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, TangentBuffer);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, BiTangentBuffer);
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	}
+
 	// Index buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementBuffer);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	if (IsTransparent)
+	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	}
 
 	// Draw the triangles !
 	glDrawElements(
@@ -93,31 +154,62 @@ GLuint Model::Draw(Camera* camera, GLuint currentShaderID)
 		(void*)0           // element array buffer offset
 	);
 
-	glDisable(GL_BLEND);
+	if (IsTransparent)
+		glDisable(GL_BLEND);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 
+	if (HasNormalMap)
+	{
+		glDisableVertexAttribArray(3);
+		glDisableVertexAttribArray(4);
+	}
+
 	return ShaderID;
 }
 
-void Model::Load(const string& path, const string& texture_path)
+void Model::Load(const string& path, const string& texture_path, const string& normalmap_path, const string& specularmap_path)
 {
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
 
 	bool res = LoadOBJ(path, vertices, uvs, normals);
-	indexVBO(vertices, uvs, normals, Indices, Vertices, UVs, Normals);
-	
+
+	std::vector<glm::vec3> tangents;
+	std::vector<glm::vec3> bitangents;
+
+	ComputeTangentBasis(
+		vertices, uvs, normals, // input
+		tangents, bitangents    // output
+	);
+
+	if (!HasNormalMap)
+		indexVBO(vertices, uvs, normals, Indices, Vertices, UVs, Normals);
+	else
+		indexVBO_TBN(vertices, uvs, normals, tangents, bitangents, Indices, Vertices, UVs, Normals, Tangents, Bitangents);
+
 	vertices.clear();
 	uvs.clear();
 	normals.clear();
+	tangents.clear();
+	bitangents.clear();
+	
+	string v_shader, f_shader;
 
 	/* hardcoded test */
-	string v_shader("Source/Shaders/StandardShading.vertexshader");
-	string f_shader("Source/Shaders/StandardShading.fragmentshader");
+	if (!HasNormalMap)
+	{
+		v_shader = "Source/Shaders/StandardShading.vertexshader";
+		f_shader = "Source/Shaders/StandardShading.fragmentshader";
+	}
+	else
+	{
+		v_shader = "Source/Shaders/NormalMapping.vertexshader";
+		f_shader = "Source/Shaders/NormalMapping.fragmentshader";
+	}
 	/**/
 
 	if (Core::Instance->shaders.count(v_shader) == 0)
@@ -135,9 +227,23 @@ void Model::Load(const string& path, const string& texture_path)
 	MVPID = glGetUniformLocation(ShaderID, "MVP");
 	ViewMatrixID = glGetUniformLocation(ShaderID, "V");
 	ModelMatrixID = glGetUniformLocation(ShaderID, "M");
-	TextureID = glGetUniformLocation(ShaderID, "myTextureSampler");
 
-	Texture = LoadDDS(texture_path.c_str());
+	if (HasNormalMap)
+	{
+		ModelMatrix3X3ID = glGetUniformLocation(ShaderID, "MV3x3");
+	}
+	
+	DiffuseTextureID = glGetUniformLocation(ShaderID, "DiffuseTextureSampler");
+	NormalTextureID = glGetUniformLocation(ShaderID, "NormalTextureSampler");
+	SpecularTextureID = glGetUniformLocation(ShaderID, "SpecularTextureSampler");
+
+	DiffuseTexture = LoadDDS(DiffusePath.c_str());
+
+	if(HasNormalMap)
+		NormalTexture = LoadBMP_custom(NormalMapPath.c_str());
+
+	if (HasSpecularMap)
+		SpecularTexture = LoadDDS(SpecularPath.c_str());
 
 	glBindVertexArray(Core::Instance->VertexArrayID);
 
@@ -156,6 +262,17 @@ void Model::Load(const string& path, const string& texture_path)
 	glGenBuffers(1, &ElementBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(unsigned int), &Indices[0], GL_STATIC_DRAW);
+
+	if (HasNormalMap)
+	{
+		glGenBuffers(1, &TangentBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, TangentBuffer);
+		glBufferData(GL_ARRAY_BUFFER, Tangents.size() * sizeof(glm::vec3), &Tangents[0], GL_STATIC_DRAW);
+
+		glGenBuffers(1, &BiTangentBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, BiTangentBuffer);
+		glBufferData(GL_ARRAY_BUFFER, Bitangents.size() * sizeof(glm::vec3), &Bitangents[0], GL_STATIC_DRAW);
+	}
 }
 
 // Very, VERY simple OBJ loader.
@@ -274,4 +391,66 @@ bool Model::LoadOBJ(
 
 	fclose(file);
 	return true;
+}
+
+void Model::ComputeTangentBasis(
+	// inputs
+	std::vector<glm::vec3> & vertices,
+	std::vector<glm::vec2> & uvs,
+	std::vector<glm::vec3> & normals,
+	// outputs
+	std::vector<glm::vec3> & tangents,
+	std::vector<glm::vec3> & bitangents
+) 
+{
+	for (unsigned int i = 0; i < vertices.size(); i += 3) 
+	{
+		// Shortcuts for vertices
+		glm::vec3 & v0 = vertices[i + 0];
+		glm::vec3 & v1 = vertices[i + 1];
+		glm::vec3 & v2 = vertices[i + 2];
+
+		// Shortcuts for UVs
+		glm::vec2 & uv0 = uvs[i + 0];
+		glm::vec2 & uv1 = uvs[i + 1];
+		glm::vec2 & uv2 = uvs[i + 2];
+
+		// Edges of the triangle : postion delta
+		glm::vec3 deltaPos1 = v1 - v0;
+		glm::vec3 deltaPos2 = v2 - v0;
+
+		// UV delta
+		glm::vec2 deltaUV1 = uv1 - uv0;
+		glm::vec2 deltaUV2 = uv2 - uv0;
+
+		float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+		glm::vec3 tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y)*r;
+		glm::vec3 bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x)*r;
+
+		// Set the same tangent for all three vertices of the triangle.
+		// They will be merged later, in vboindexer.cpp
+		tangents.push_back(tangent);
+		tangents.push_back(tangent);
+		tangents.push_back(tangent);
+
+		// Same thing for binormals
+		bitangents.push_back(bitangent);
+		bitangents.push_back(bitangent);
+		bitangents.push_back(bitangent);
+	}
+	
+	for (unsigned int i = 0; i < vertices.size(); i += 1)
+	{
+		glm::vec3 & n = normals[i];
+		glm::vec3 & t = tangents[i];
+		glm::vec3 & b = bitangents[i];
+
+		// Gram-Schmidt orthogonalize
+		t = glm::normalize(t - n * glm::dot(n, t));
+
+		// Calculate handedness
+		if (glm::dot(glm::cross(n, t), b) < 0.0f) {
+			t = t * -1.0f;
+		}
+	}
 }

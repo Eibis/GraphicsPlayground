@@ -94,7 +94,8 @@ private:
 class Model
 {
 public:
-	Model(const string& path, const string& texture_path, glm::vec3 origin, float scale = 1.0f);
+	Model(const string& path, const string& texture_path, glm::vec3 origin, float scale);
+	Model(const string& path, const string& texture_path, glm::vec3 origin, float scale, const string& normalmap_path, const string& specularmap_path);
 	~Model();
 
 	GLuint Draw(Camera* camera, GLuint currentShaderID);
@@ -103,7 +104,17 @@ public:
 
 	Box* BoundingBox;
 
+	bool IsTransparent = false;
+	bool HasNormalMap = false;
+	bool HasSpecularMap = false;
+
 private:
+
+	void Init(const string& path, const string& texture_path, glm::vec3 origin, float scale);
+
+	string DiffusePath;
+	string NormalMapPath;
+	string SpecularPath;
 
 	float Scale;
 
@@ -113,21 +124,33 @@ private:
 	GLuint MVPID;
 	GLuint ViewMatrixID;
 	GLuint ModelMatrixID;
-	GLuint TextureID;
+	GLuint ModelMatrix3X3ID;
+
+	GLuint DiffuseTextureID;
+	GLuint NormalTextureID;
+	GLuint SpecularTextureID;
 
 	GLuint VertexBuffer;
 	GLuint NormalBuffer;
 	GLuint UVBuffer;
+	GLuint TangentBuffer;
+	GLuint BiTangentBuffer;
 	GLuint ElementBuffer;
-	GLuint Texture;
+
+	GLuint DiffuseTexture;
+	GLuint NormalTexture;
+	GLuint SpecularTexture;
 
 	std::vector< glm::vec3 > Vertices;
 	std::vector< glm::vec2 > UVs;
 	std::vector< glm::vec3 > Normals;
+	std::vector< glm::vec3 > Tangents;
+	std::vector< glm::vec3 > Bitangents;
 
 	std::vector<unsigned int> Indices;
 
-	void Load(const string& path, const string& texture_path);
+	void Load(const string& path, const string& texture_path, const string& normalmap_path, const string& specularmap_path);
 	bool LoadOBJ(const string& path, std::vector<glm::vec3> & out_vertices, std::vector<glm::vec2> & out_uvs, std::vector<glm::vec3> & out_normals);
+	void ComputeTangentBasis(std::vector<glm::vec3> & vertices, std::vector<glm::vec2> & uvs, std::vector<glm::vec3> & normals, std::vector<glm::vec3> & tangents, std::vector<glm::vec3> & bitangents);
 };
 

@@ -132,12 +132,6 @@ void indexVBO(
 	}
 }
 
-
-
-
-
-
-
 void indexVBO_TBN(
 	std::vector<glm::vec3> & in_vertices,
 	std::vector<glm::vec2> & in_uvs,
@@ -145,7 +139,7 @@ void indexVBO_TBN(
 	std::vector<glm::vec3> & in_tangents,
 	std::vector<glm::vec3> & in_bitangents,
 
-	std::vector<unsigned short> & out_indices,
+	std::vector<unsigned int> & out_indices,
 	std::vector<glm::vec3> & out_vertices,
 	std::vector<glm::vec2> & out_uvs,
 	std::vector<glm::vec3> & out_normals,
@@ -171,7 +165,7 @@ void indexVBO_TBN(
 			out_normals .push_back( in_normals[i]);
 			out_tangents .push_back( in_tangents[i]);
 			out_bitangents .push_back( in_bitangents[i]);
-			out_indices .push_back( (unsigned short)out_vertices.size() - 1 );
+			out_indices .push_back( (unsigned int)out_vertices.size() - 1 );
 		}
 	}
 }
