@@ -144,6 +144,7 @@
     <ClCompile Include="Source\Core\Core.cpp" />
     <ClCompile Include="Source\Core\Utilities.cpp" />
     <ClCompile Include="Source\Rendering\Model.cpp" />
+    <ClCompile Include="Source\Rendering\RenderTexture.cpp" />
     <ClCompile Include="Source\Rendering\text2D.cpp" />
     <ClCompile Include="Source\Rendering\vboindexer.cpp" />
     <ClCompile Include="Source\Shaders\shader.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="Source\Core\Core.h" />
     <ClInclude Include="Source\Core\Utilities.h" />
     <ClInclude Include="Source\Rendering\Model.h" />
+    <ClInclude Include="Source\Rendering\RenderTexture.h" />
     <ClInclude Include="Source\Rendering\text2D.hpp" />
     <ClInclude Include="Source\Rendering\vboindexer.hpp" />
     <ClInclude Include="Source\Shaders\shader.hpp" />

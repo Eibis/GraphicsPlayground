@@ -17,6 +17,7 @@
 using namespace glm;
 
 #include "../Rendering/Model.h"
+#include "../Rendering/RenderTexture.h"
 #include "../Rendering/text2D.hpp"
 #include "Camera.h"
 #include "Utilities.h"
@@ -102,6 +103,20 @@ int Core::MainLoop()
 		Utilities::GetInstance()->UpdateFrameCount(texts[0]);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		for (auto it_render = RenderTextures.begin(); it_render != RenderTextures.end(); ++it_render)
+		{
+			(*it_render)->SetAsTarget();
+
+			for (auto it = Cameras.begin(); it != Cameras.end(); ++it)
+			{
+				(*it)->Render(objects3d);
+			}
+		}
+
+		/*we reset the window as target*/
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, 1024, 768);
 
 		for (auto it = Cameras.begin(); it != Cameras.end(); ++it)
 		{
